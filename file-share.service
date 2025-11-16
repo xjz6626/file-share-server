@@ -1,0 +1,26 @@
+[Unit]
+Description=文件共享服务器
+Documentation=https://github.com/yourname/file-share
+After=network.target
+
+[Service]
+Type=simple
+User=xjz
+Group=xjz
+WorkingDirectory=/home/xjz/workplace/share
+Environment="PATH=/usr/local/bin:/usr/bin:/bin"
+ExecStart=/usr/bin/python3 /home/xjz/workplace/share/file_server.py
+Restart=always
+RestartSec=10
+
+# 安全设置
+NoNewPrivileges=true
+PrivateTmp=true
+
+# 日志设置
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=file-share
+
+[Install]
+WantedBy=multi-user.target

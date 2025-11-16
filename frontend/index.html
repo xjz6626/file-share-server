@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="文件共享">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#4facfe">
+    <title>文件共享服务器</title>
+    <link rel="manifest" href="/manifest.json">
+    <link rel="stylesheet" href="styles.css">
+    
+    <!-- iOS 图标 -->
+    <link rel="apple-touch-icon" href="/icon-192.png">
+    
+    <!-- 安装提示样式 -->
+    <style>
+        .install-prompt {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            right: 20px;
+            background: white;
+            padding: 15px 20px;
+            border-radius: 10px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+            display: none;
+            z-index: 1000;
+            animation: slideUp 0.3s ease;
+        }
+        
+        .install-prompt.show {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        @keyframes slideUp {
+            from { transform: translateY(100%); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        .install-prompt-content {
+            flex: 1;
+        }
+        
+        .install-prompt-title {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 5px;
+        }
+        
+        .install-prompt-text {
+            font-size: 14px;
+            color: #6c757d;
+        }
+        
+        .install-prompt-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .install-btn {
+            padding: 8px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+        
+        .install-btn-primary {
+            background: #4facfe;
+            color: white;
+        }
+        
+        .install-btn-secondary {
+            background: #e9ecef;
+            color: #495057;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 头部 -->
+        <div class="header">
+            <h1>📁 文件共享服务器</h1>
+            <p>轻松在设备间共享文件和文本</p>
+        </div>
+
+        <!-- 标签页切换 -->
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('files')">📂 文件共享</button>
+            <button class="tab-btn" onclick="switchTab('clipboard')">📋 剪贴板</button>
+        </div>
+
+        <!-- 文件共享标签页 -->
+        <div id="filesTab" class="tab-content active">
+            <!-- 服务器信息 -->
+            <div class="info-section">
+                <div class="info-item">
+                    <span class="info-label">文件数量:</span>
+                    <span class="info-value" id="fileCount">0</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">总大小:</span>
+                    <span class="info-value" id="totalSize">0 B</span>
+                </div>
+            </div>
+
+        <!-- 上传区域 -->
+        <div class="upload-section">
+            <div class="upload-area" id="uploadArea">
+                <div class="upload-icon">📤</div>
+                <p class="upload-text">点击选择文件或拖拽文件到此处</p>
+                <p class="upload-hint">支持所有文件类型</p>
+                <input type="file" id="fileInput" multiple hidden>
+            </div>
+            
+            <!-- 上传进度 -->
+            <div class="upload-progress" id="uploadProgress" style="display: none;">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <p class="progress-text" id="progressText">上传中... 0%</p>
+            </div>
+        </div>
+
+            <!-- 文件列表 -->
+            <div class="file-list">
+                <h2>📂 共享文件列表</h2>
+                <div id="fileListContainer">
+                    <!-- 动态加载文件列表 -->
+                </div>
+            </div>
+        </div>
+
+        <!-- 剪贴板标签页 -->
+        <div id="clipboardTab" class="tab-content">
+            <!-- 添加文本区域 -->
+            <div class="clipboard-add-section">
+                <h3>✍️ 添加文本</h3>
+                <textarea id="clipboardInput" placeholder="输入要共享的文本内容..." rows="5"></textarea>
+                <div class="clipboard-add-actions">
+                    <button class="btn btn-primary" onclick="addClipboard()">
+                        ➕ 添加到剪贴板
+                    </button>
+                    <button class="btn btn-secondary" onclick="clearInput()">
+                        🗑️ 清空输入
+                    </button>
+                </div>
+            </div>
+
+            <!-- 剪贴板列表 -->
+            <div class="clipboard-list">
+                <div class="clipboard-header">
+                    <h2>📋 共享剪贴板 (<span id="clipboardCount">0</span>)</h2>
+                    <button class="btn btn-danger-outline" onclick="clearAllClipboard()">
+                        🗑️ 清空全部
+                    </button>
+                </div>
+                <div id="clipboardListContainer">
+                    <!-- 动态加载剪贴板列表 -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 消息提示 -->
+    <div class="toast" id="toast"></div>
+
+    <!-- PWA 安装提示 -->
+    <div class="install-prompt" id="installPrompt">
+        <div class="install-prompt-content">
+            <div class="install-prompt-title">📱 安装应用</div>
+            <div class="install-prompt-text">添加到主屏幕，像App一样使用</div>
+        </div>
+        <div class="install-prompt-actions">
+            <button class="install-btn install-btn-primary" id="installBtn">安装</button>
+            <button class="install-btn install-btn-secondary" id="dismissBtn">稍后</button>
+        </div>
+    </div>
+
+    <!-- 查看详情模态框 -->
+    <div class="modal" id="viewModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>📝 文本详情</h3>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <pre id="modalContent"></pre>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" onclick="copyModalContent()">📋 复制</button>
+                <button class="btn btn-secondary" onclick="closeModal()">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
