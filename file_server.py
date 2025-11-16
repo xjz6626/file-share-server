@@ -6,7 +6,6 @@
 
 from flask import Flask, request, jsonify, send_from_directory, send_file
 from flask_cors import CORS
-from werkzeug.utils import secure_filename
 import os
 import socket
 import json
@@ -30,6 +29,23 @@ os.makedirs(STATIC_DIR, exist_ok=True)
 if not os.path.exists(CLIPBOARD_FILE):
     with open(CLIPBOARD_FILE, 'w', encoding='utf-8') as f:
         json.dump([], f)
+
+
+def safe_filename(filename):
+    """安全处理文件名，支持中文"""
+    # 移除路径分隔符和其他危险字符，但保留中文
+    dangerous_chars = ['/', '\\', '..', '\0', '\n', '\r', '\t']
+    for char in dangerous_chars:
+        filename = filename.replace(char, '_')
+    
+    # 移除开头和结尾的空格和点
+    filename = filename.strip('. ')
+    
+    # 如果文件名为空，使用默认名称
+    if not filename:
+        filename = 'untitled'
+    
+    return filename
 
 
 def get_file_icon(filename):
@@ -130,8 +146,8 @@ def upload_file():
                 'error': '文件名为空'
             }), 400
         
-        # 安全处理文件名
-        filename = secure_filename(file.filename)
+        # 安全处理文件名（支持中文）
+        filename = safe_filename(file.filename)
         filepath = os.path.join(SHARE_DIR, filename)
         
         # 如果文件已存在，添加序号
